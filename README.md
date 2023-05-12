@@ -1,4 +1,4 @@
-# CE_imtools
+# ce_imtools
 3가지 크롬확장프로그램
 * 유튜브 쇼츠, 일반 플레이어 변환
 * Pdf toolbar 없애기
