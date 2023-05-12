@@ -33,10 +33,8 @@ async function imOnClick(info) {
       var url = new URL(info.frameUrl);
 
       if (url.hash.includes('#toolbar=0') > 0) {
-        console.log('no');
         url.hash = '';
       } else {
-        console.log('has');
         url.hash = '#toolbar=0';
       }
 
@@ -91,7 +89,13 @@ async function imOnInstalled() {
 chrome.tabs.onActivated.addListener(imActivated);
 
 async function imActivated(info) {
-  const tab = await chrome.tabs.get(info.tabId);
+  var tab = await chrome.tabs.get(info.tabId);
+
+  if (tab.url.length == 0) {
+    await new Promise((res) => setTimeout(res, 30));
+    await chrome.tabs.reload(tab.id);
+    tab = await chrome.tabs.get(info.tabId);
+  }
 
   var isPdf = tab.url.includes('.pdf') > 0;
 
