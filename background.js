@@ -8,6 +8,8 @@
 //
 //  await 이해를 못하고있음
 //
+//  1. document.addEventListener( "DOMContentLoaded"
+//  2. window.addEventListener( "load",
 
 chrome.runtime.onInstalled.addListener(async () => {
     console.log("hi im dongye.");
