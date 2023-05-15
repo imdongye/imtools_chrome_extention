@@ -6,102 +6,101 @@
 //  1. popup에 옵션을 키면 쇼츠 자동으로 변환해서 열기 (webRequset)
 //  2. new Promise((res) => setTimeout(res, ms))
 //
+//  await 이해를 못하고있음
+//
 
-chrome.contextMenus.onClicked.addListener(imOnClick);
+chrome.runtime.onInstalled.addListener(async () => {
+    console.log("hi im dongye.");
+
+    chrome.storage.local.set({ TEST_COUNT: 0, SHORTS_CHECKED: false });
+
+    chrome.contextMenus.create({
+        title: "나무위키로 검색",
+        contexts: ["selection"],
+        id: "namu",
+    });
+    chrome.contextMenus.create({
+        title: "쇼츠말고 동영상플레이어로 열기",
+        contexts: ["link"],
+        targetUrlPatterns: ["https://www.youtube.com/shorts/*"],
+        id: "shorts",
+    });
+    chrome.contextMenus.create({
+        title: "툴바 없애기/보이기",
+        contexts: ["frame"],
+        id: "pdf",
+        enabled: false,
+        visible: false,
+    });
+});
 
 // (info, tab)으로 현재 tab을 가져올수있지만 pdf에서 tabid가 -1로 들어옴.
-async function imOnClick(info) {
-  // [tab] : Destructuring Assignment
-  var [tab] = await chrome.tabs.query({
-    active: true,
-    lastFocusedWindow: true,
-  });
+chrome.contextMenus.onClicked.addListener(async (info) => {
+    // [tab] : Destructuring Assignment
+    let [tab] = await chrome.tabs.query({
+        active: true,
+        lastFocusedWindow: true,
+    });
 
-  switch (info.menuItemId) {
-    case 'namu':
-      var url = new URL(`https://namu.wiki/w/${info.selectionText}`);
-      await chrome.tabs.create({ url: url.href, index: tab.index + 1 });
-      await chrome.tabs.highlight({ tabs: tab.index });
-      break;
+    switch (info.menuItemId) {
+        case "namu":
+            var url = new URL(`https://namu.wiki/w/${info.selectionText}`);
+            await chrome.tabs.create({ url: url.href, index: tab.index + 1 });
+            await chrome.tabs.highlight({ tabs: tab.index });
+            break;
 
-    case 'shorts':
-      var url = new URL(info.linkUrl.replace('shorts/', 'watch?v='));
-      await chrome.tabs.update(tab.id, { url: url.href });
-      break;
+        case "shorts":
+            var url = new URL(info.linkUrl.replace("shorts/", "watch?v="));
+            await chrome.tabs.update(tab.id, { url: url.href });
+            break;
 
-    case 'pdf':
-      var url = new URL(info.frameUrl);
+        case "pdf":
+            var url = new URL(info.frameUrl);
 
-      if (url.hash.includes('#toolbar=0') > 0) {
-        url.hash = '';
-      } else {
-        url.hash = '#toolbar=0';
-      }
+            if (url.hash.includes("#toolbar=0") > 0) {
+                url.hash = "";
+            } else {
+                url.hash = "#toolbar=0";
+            }
 
-      // function getPdf() {
-      //   const pdfViewer = window.PDFViewerApplication;
-      //   return pdfViewer;
-      // }
+            // pdf는 update로 url을 바꾸고 reload해줘야 toolbar=0이 적용된다.
+            // 하지만 pdf는 이상하게 비동기 처리해도 url이 안바뀐채로 reload돼서 sleep해준다.
+            // 컴퓨터에 따라서 sleep 시간(30ms)이 바뀔수 있다.
+            await chrome.tabs.update(tab.id, { url: url.href });
+            await new Promise((res) => setTimeout(res, 30));
+            await chrome.tabs.reload(tab.id);
+            break;
+    }
+});
 
-      // chrome.scripting
-      //   .executeScript({
-      //     target: { tabId: tab.id },
-      //     func: getPdf,
-      //   })
-      //   .then(function (pdfViewer) {
-      //     console.log(pdfViewer.currentPageNumber);
-      //   });
+async function updatePdfContextMenuBtn(tabId) {
+    const tab = await chrome.tabs.get(tabId);
 
-      // pdf는 update로 url을 바꾸고 reload해줘야 toolbar=0이 적용된다.
-      // 하지만 pdf는 이상하게 비동기 처리해도 url이 안바뀐채로 reload돼서 sleep해준다.
-      // 컴퓨터에 따라서 sleep 시간(30ms)이 바뀔수 있다.
-      await chrome.tabs.update(tab.id, { url: url.href });
-      await new Promise((res) => setTimeout(res, 30));
-      await chrome.tabs.reload(tab.id);
-      break;
-  }
+    // todo: <embed type="application/pdf">
+    const isPdf = tab.url.includes("pdf") > 0 || tab.title.includes("pdf") > 0 || tab.title.includes("div") > 0;
+
+    chrome.contextMenus.update("pdf", {
+        contexts: isPdf ? ["all"] : ["action"],
+        enabled: isPdf,
+        visible: isPdf,
+    });
 }
 
-chrome.runtime.onInstalled.addListener(imOnInstalled);
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    await updatePdfContextMenuBtn(activeInfo.tabId);
+});
 
-async function imOnInstalled() {
-  console.log('hi im dongye.');
-  chrome.contextMenus.create({
-    title: '나무위키로 검색',
-    contexts: ['selection'],
-    id: 'namu',
-  });
-  chrome.contextMenus.create({
-    title: '쇼츠말고 동영상플레이어로 열기',
-    contexts: ['link'],
-    targetUrlPatterns: ['https://www.youtube.com/shorts/*'],
-    id: 'shorts',
-  });
-  chrome.contextMenus.create({
-    title: '툴바 없애기/보이기',
-    contexts: ['frame'],
-    id: 'pdf',
-    enabled: false,
-    visible: false,
-  });
-}
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
+    if (changeInfo.status === "loading" && changeInfo.url) {
+        chrome.storage.local.get(["SHORTS_CHECKED"]).then((rst) => {
+            const isChecked = rst.SHORTS_CHECKED;
+            if (isChecked && changeInfo.url.includes("youtube.com/shorts/") > 0) {
+                chrome.tabs.goBack();
+                const url = new URL(changeInfo.url.replace("shorts/", "watch?v="));
+                chrome.tabs.update(tabId, { url: url.href });
+            }
+        });
 
-chrome.tabs.onActivated.addListener(imActivated);
-
-async function imActivated(info) {
-  var tab = await chrome.tabs.get(info.tabId);
-
-  if (tab.url.length == 0) {
-    await new Promise((res) => setTimeout(res, 30));
-    await chrome.tabs.reload(tab.id);
-    tab = await chrome.tabs.get(info.tabId);
-  }
-
-  var isPdf = tab.url.includes('.pdf') > 0;
-
-  chrome.contextMenus.update('pdf', {
-    contexts: isPdf ? ['all'] : ['action'],
-    enabled: isPdf,
-    visible: isPdf,
-  });
-}
+        await updatePdfContextMenuBtn(tabId);
+    }
+});
