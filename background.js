@@ -3,13 +3,17 @@
 //
 //  todo:
 //  0. pdf페이지 연동 #toolbar=1&pages=5
-//  1. popup에 옵션을 키면 쇼츠 자동으로 변환해서 열기 (webRequset)
 //  2. new Promise((res) => setTimeout(res, ms))
-//
-//  await 이해를 못하고있음
 //
 //  1. document.addEventListener( "DOMContentLoaded"
 //  2. window.addEventListener( "load",
+//
+//  todo feature:
+//  1. 휠클랙으로 쇼츠 들어갔을때 버그
+//  2. 나무위키 검색기록
+//  3. 나무위키 새탭현재탭설정
+//
+//
 
 chrome.runtime.onInstalled.addListener(async () => {
     console.log("hi im dongye.");
