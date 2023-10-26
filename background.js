@@ -96,24 +96,29 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     await updatePdfContextMenuBtn(activeInfo.tabId);
 });
 
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
-    if (changeInfo.status === "loading" && changeInfo.url) {
-        chrome.storage.local.get(["SHORTS_CHECKED"]).then((rst) => {
-            const isChecked = rst.SHORTS_CHECKED;
-            if (isChecked && changeInfo.url.includes("youtube.com/shorts/") > 0) {
-                const url = new URL(changeInfo.url.replace("shorts/", "watch?v="));
-                chrome.tabs.update(tabId, { url: url.href });
-            }
-        });
-
-        chrome.storage.local.get(["NAVER_MOBILE_CHECHED"]).then((rst) => {
-            const isChecked = rst.NAVER_MOBILE_CHECHED;
-            if (isChecked && changeInfo.url.includes("m.blog.naver") > 0) {
-                const url = new URL(changeInfo.url.replace("m.", ""));
-                chrome.tabs.update(tabId, { url: url.href });
-            }
-        });
-
-        await updatePdfContextMenuBtn(tabId);
+async function redirect(tabId, changeInfo, tab) {
+    if (!(changeInfo.status === "loading" && changeInfo.url)) {
+        return;
     }
-});
+    chrome.storage.local.get(["SHORTS_CHECKED"]).then(async (rst) => {
+        const isChecked = rst.SHORTS_CHECKED;
+        if (isChecked && changeInfo.url.includes("youtube.com/shorts/") > 0) {
+            const url = new URL(changeInfo.url.replace("shorts/", "watch?v="));
+            // MDN에 update옵션중 loadReplace를 사용하면 뒤로가기 문제를 해결할수있다고 나오는데 현재 크롬에서 지원안함.
+            // 일단. goBack으로 대체
+            chrome.tabs.goBack(tabId);
+            chrome.tabs.update(tabId, { url: url.href });
+        }
+    });
+
+    chrome.storage.local.get(["NAVER_MOBILE_CHECHED"]).then(async (rst) => {
+        const isChecked = rst.NAVER_MOBILE_CHECHED;
+        if (isChecked && changeInfo.url.includes("m.blog.naver") > 0) {
+            const url = new URL(changeInfo.url.replace("m.", ""));
+            chrome.tabs.goBack(tabId);
+            chrome.tabs.update(tabId, { url: url.href });
+        }
+    });
+    await updatePdfContextMenuBtn(tabId);
+}
+chrome.tabs.onUpdated.addListener(redirect);

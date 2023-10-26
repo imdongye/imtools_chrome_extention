@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "ImTools",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "description": "Youtube Shorts link to Normal video link, Search on namu wiki, Pdf no toolbar viewer",
     "permissions": [
         "contextMenus",
