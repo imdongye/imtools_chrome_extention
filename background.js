@@ -18,7 +18,7 @@
 chrome.runtime.onInstalled.addListener(async () => {
     console.log("hi im dongye.");
 
-    chrome.storage.local.set({ TEST_COUNT: 0, SHORTS_CHECKED: false, NAVER_MOBILE_CHECHED: true });
+    chrome.storage.local.set({ TEST_COUNT: 0, SHORTS_CHECKED: true, NAVER_MOBILE_CHECHED: true });
 
     chrome.contextMenus.create({
         title: "나무위키로 검색",
@@ -101,7 +101,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
         chrome.storage.local.get(["SHORTS_CHECKED"]).then((rst) => {
             const isChecked = rst.SHORTS_CHECKED;
             if (isChecked && changeInfo.url.includes("youtube.com/shorts/") > 0) {
-                chrome.tabs.goBack();
                 const url = new URL(changeInfo.url.replace("shorts/", "watch?v="));
                 chrome.tabs.update(tabId, { url: url.href });
             }
@@ -110,7 +109,6 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
         chrome.storage.local.get(["NAVER_MOBILE_CHECHED"]).then((rst) => {
             const isChecked = rst.NAVER_MOBILE_CHECHED;
             if (isChecked && changeInfo.url.includes("m.blog.naver") > 0) {
-                chrome.tabs.goBack();
                 const url = new URL(changeInfo.url.replace("m.", ""));
                 chrome.tabs.update(tabId, { url: url.href });
             }
