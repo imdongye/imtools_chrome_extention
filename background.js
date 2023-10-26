@@ -18,7 +18,7 @@
 chrome.runtime.onInstalled.addListener(async () => {
     console.log("hi im dongye.");
 
-    chrome.storage.local.set({ TEST_COUNT: 0, SHORTS_CHECKED: true, NAVER_MOBILE_CHECHED: true });
+    chrome.storage.local.set({ SHORTS_CHECKED: true, NAVER_MOBILE_CHECHED: true });
 
     chrome.contextMenus.create({
         title: "나무위키로 검색",
